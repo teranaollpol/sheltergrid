@@ -1,0 +1,3 @@
+export type Shelter={id:string;name:string;address_label:string;operator:string;state:string;zone_ids:string[];supply_ids:string[];check_ids:string[];shift_ids:string[];incident_ids:string[];report_ids:string[];plan_id:string};
+export type ShelterBootstrap={grid:{owner:string;grid_name:string;readiness_policy:string;configured:boolean};counts:{shelters:number;zones:number;supplies:number;incidents:number;activated:number};recent_shelters:Shelter[]};
+export type TxState={stage:"idle"|"wallet"|"submitted"|"finalizing"|"finalized"|"failed";action:string;hash?:string;error?:string};
