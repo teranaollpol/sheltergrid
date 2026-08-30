@@ -167,14 +167,14 @@ function Command({
           { key: "id", label: "Check ID" },
           { key: "checkpoint", label: "Checkpoint" },
           { key: "passed", label: "Passed: true / false" },
-          { key: "url", label: "Evidence URL", kind: "url" },
+          { key: "evidence", label: "Authority evidence ID" },
         ]}
         args={(v) => [
           v.shelter,
           v.id,
           v.checkpoint,
           v.passed.toLowerCase() === "true",
-          v.url,
+          v.evidence,
         ]}
       />
     );
@@ -188,8 +188,9 @@ function Command({
           { key: "id", label: "Incident ID" },
           { key: "severity", label: "MINOR / MATERIAL / CRITICAL" },
           { key: "description", label: "Incident description", kind: "area" },
+          { key: "evidence", label: "Authority evidence ID" },
         ]}
-        args={(v) => [v.shelter, v.id, v.severity, v.description]}
+        args={(v) => [v.shelter, v.id, v.severity, v.description, v.evidence]}
       />
     );
   return <Activation />;
@@ -256,7 +257,7 @@ function CommandWall({ items }: { items: Shelter[] }) {
         "REGISTERED",
         "INVENTORY_OPEN",
         "READINESS_REVIEW",
-        "READY",
+        "REASSESSMENT_REQUIRED",
         "ACTIVATED",
       ].map((state, i) => (
         <section key={state}>
@@ -266,18 +267,14 @@ function CommandWall({ items }: { items: Shelter[] }) {
             <b>
               {
                 items.filter((x) =>
-                  i === 3
-                    ? ["READY", "CONDITIONAL"].includes(x.state)
-                    : x.state === state,
+                  x.state === state,
                 ).length
               }
             </b>
           </header>
           {items
             .filter((x) =>
-              i === 3
-                ? ["READY", "CONDITIONAL"].includes(x.state)
-                : x.state === state,
+              x.state === state,
             )
             .map((x) => (
               <article key={x.id}>
@@ -296,9 +293,7 @@ function CommandWall({ items }: { items: Shelter[] }) {
               </article>
             ))}
           {!items.some((x) =>
-            i === 3
-              ? ["READY", "CONDITIONAL"].includes(x.state)
-              : x.state === state,
+            x.state === state,
           ) && <div className="sg-empty">NO STATIONS</div>}
         </section>
       ))}
@@ -372,8 +367,8 @@ export function AppShell({ routeIndex: initialRouteIndex }: Props) {
           <span>COMMAND / {titles[routeIndex].toUpperCase()}</span>
           <h1>{titles[routeIndex]}</h1>
           <p>
-            Capacity, supplies, access, staffing and incidents must converge
-            before activation.
+            Authority-bound evidence, freshness and the current operational
+            revision must converge before activation.
           </p>
         </header>
         {p.isLoading ? (
@@ -399,6 +394,7 @@ export function AppShell({ routeIndex: initialRouteIndex }: Props) {
           ["Capacity zones", c?.zones],
           ["Supply lots", c?.supplies],
           ["Incidents", c?.incidents],
+          ["Verified evidence", c?.evidence],
           ["Activated", c?.activated],
         ].map(([k, v]) => (
           <div key={String(k)}>
@@ -409,12 +405,12 @@ export function AppShell({ routeIndex: initialRouteIndex }: Props) {
         <article>
           <AlertTriangle />
           <strong>Neutral activation</strong>
-          <p>Conditional readiness never silently becomes full readiness.</p>
+          <p>A material change or critical incident invalidates the prior verdict and forces reassessment.</p>
         </article>
       </aside>
       <footer>
         <span>Wallet-secured dispatch</span>
-        <span>Evidence refresh 30s</span>
+        <span>SHA-256 + authority + expiry</span>
         <span>Desktop command station</span>
       </footer>
     </main>

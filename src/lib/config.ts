@@ -11,23 +11,23 @@ export const appConfig = {
   "neutral": "limited_activation",
   "routes": [
     [
-      "/network",
+      "/app",
       "Wall"
     ],
     [
-      "/network",
+      "/app",
       "Shelters"
     ],
     [
-      "/network",
+      "/app",
       "Checks"
     ],
     [
-      "/network",
+      "/app",
       "Incidents"
     ],
     [
-      "/network",
+      "/app",
       "Activation"
     ]
   ],

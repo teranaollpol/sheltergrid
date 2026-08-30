@@ -1,66 +1,58 @@
 # ShelterGrid
 
-> Emergency shelter readiness is a live operational condition, not a static capacity number.
+ShelterGrid is an emergency-readiness ledger for shelters whose activation depends on a current, attributable operational record. The application combines deterministic inventory and incident accounting with GenLayer consensus over independently fetched authority evidence.
 
-ShelterGrid coordinates shelters, zones, supplies, accessibility checks, staffing shifts, incidents, readiness reports, and activation decisions. Its GenLayer intelligent contract keeps every assessment connected to attributable evidence and preserves a conservative `limited_activation` path when the record is incomplete.
+## Application
 
-## Command Intent
+- Live site: https://teranaollpol.github.io/sheltergrid/
+- App route: https://teranaollpol.github.io/sheltergrid/app/
+- Network: GenLayer StudioNet (`61999`)
+- Contract: [`0xA748CB9228f17549838E02E0Eb5ee9cFeDcA0938`](https://explorer-studio.genlayer.com/address/0xA748CB9228f17549838E02E0Eb5ee9cFeDcA0938)
+- Frontend: Next.js, React, RainbowKit, wagmi, genlayer-js
 
-The system helps an authorized response team answer three questions:
+## Operational trust model
 
-1. **What capacity is actually available now?**
-2. **Which constraints prevent full activation?**
-3. **What evidence supports the published readiness state?**
+The grid owner appoints two distinct roles:
 
-It does not dispatch emergency services automatically, guarantee physical availability, or replace local incident command.
+- **coordinators** request final activation and manage incident resolution;
+- **evidence authorities** publish operational records from their own bound wallets.
 
-## Readiness Board
+An authority record is accepted only when validators can retrieve its public HTTPS source and independently reproduce the committed SHA-256. Every record has an on-chain observation time and expiry. Facility, capacity, supplies, accessibility, staffing and incident evidence must all be current before a review can begin.
 
-ShelterGrid consolidates the operational picture in `/network`. The root route `/` introduces the project.
+## Readiness revisions
 
-The board is organized around live command bands:
+Every readiness-affecting write advances `operational_revision`. A plan stores the exact revision and a six-category evidence snapshot used by consensus. Activation checks that:
 
-- shelter identity and operating authority;
-- capacity and zone allocation;
-- supply readiness;
-- accessibility and facility checks;
-- staffing and shift coverage;
-- incidents and unresolved constraints;
-- activation plan;
-- consensus assessment and final status.
+1. the stored plan revision still equals the live operational revision;
+2. every snapshotted evidence record remains current and correctly bound;
+3. no critical incident is open;
+4. the shelter is in a consensus-approved `READY` or `CONDITIONAL` state.
 
-Because these bands describe the same selected shelter, they are not split into separate pages.
+A new evidence record, inventory change, incident or resolution sets `assessment_current` to false. Existing `READY`, `CONDITIONAL`, `NOT_READY`, review or active states move to `REASSESSMENT_REQUIRED`. This prevents an older verdict from surviving a material change.
 
-## Activation Matrix
+## Consensus boundary
 
-| Evidence state | Operational posture |
-| --- | --- |
-| Capacity, staffing, supplies, and checks supported | Eligible for full activation review |
-| Essential evidence incomplete | `limited_activation` |
-| Material incident or blocker open | Hold or constrained activation |
-| New counter-evidence filed | Reassess before publishing |
-| Final record approved | Publish readiness state and retain audit history |
+The contract owns the activation decision. Validators re-fetch all six authority records, verify their hashes, compare them with the deterministic inventory and incident counters, then independently agree on every readiness dimension, the final result and the confidence bucket. Open critical incidents are a deterministic `NOT_READY` override.
 
-## Network Record
+The React client owns navigation, wallet connection and presentation only. Browser writes are signed through the connected wagmi wallet provider and are shown as successful only after `FINALIZED`, `MAJORITY_AGREE` consensus.
 
-**Protocol:** ShelterGrid Activation Protocol  
-**Chain:** GenLayer Studionet `61999`  
-**Contract:** [`0x657C681CF3b6D727B6ddC56155847E7BdaA3bA32`](https://explorer-studio.genlayer.com/address/0x657C681CF3b6D727B6ddC56155847E7BdaA3bA32)  
-Live app: https://teranaollpol.github.io/sheltergrid/
-**Public methods:** 25  
-**Deployment:** `configured_verified`
+## Repository map
 
-## Stand Up A Local Board
+- `contracts/ShelterGrid.py` — pinned GenVM intelligent contract (30 public methods).
+- `tests/direct/test_sheltergrid.py` — role, hash, freshness, revision and lifecycle regressions.
+- `tests/source.test.mjs` — contract/client surface and signer-path checks.
+- `src/lib/deployment.ts` — public StudioNet contract address used by the frontend.
+
+## Verify locally
 
 ```powershell
-npm run dev
-```
-
-Operational verification:
-
-```powershell
-npm run typecheck
+python -m pip install -r requirements.txt
+genvm-lint check contracts/ShelterGrid.py --json
+python -m pytest tests/direct -q
+npm ci --legacy-peer-deps
 npm test
-npm run test:studionet
+npm run typecheck
 npm run build
 ```
+
+ShelterGrid supports incident command; it does not replace physical inspections, emergency dispatch or the responsible public authority.
